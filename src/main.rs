@@ -138,6 +138,23 @@ I = std(I);\");
 quit;",
     )
     .unwrap();
+
+    let mut stage3_writer =
+        BufWriter::new(File::create(format!("{directory}/stage3.sing")).unwrap());
+    writeln!(stage3_writer, "< \"{directory}/stage2.sing\";").unwrap();
+    for mask in 0..1 << (n - 1) {
+        let is = (2..=n)
+            .filter(|i| mask & (1 << (i - 2)) != 0)
+            .collect::<Vec<_>>();
+        for d1 in 0..=d - is.iter().sum::<u32>() {
+            let x = std::iter::once(format!("z(1)^{d1}"))
+                .chain(is.iter().map(|i| format!("cs({i})")))
+                .collect::<Vec<_>>()
+                .join("*");
+            writeln!(stage3_writer, "printf(\"{x}=%s\",reduce({x},I));").unwrap();
+        }
+    }
+    writeln!(stage3_writer, "quit;").unwrap();
 }
 
 fn partitions(weight: u32, length: u32) -> Vec<Vec<u32>> {
