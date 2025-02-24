@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Alois Wohlschlager <wohlschlager@math.lmu.de>
 // SPDX-License-Identifier: EUPL-1.2
 
-use std::{cmp::Reverse, collections::HashSet};
+use std::{
+    cmp::Reverse,
+    collections::HashSet,
+    fs::File,
+    io::{BufWriter, Write},
+};
 
 fn main() {
     let n = std::env::args()
@@ -12,7 +17,13 @@ fn main() {
 
     let d = n * (n + 1) / 2;
 
-    println!(
+    let directory = format!("results/ogr{n}");
+    std::fs::create_dir_all(&directory).unwrap();
+    let mut stage1_writer =
+        BufWriter::new(File::create(format!("{directory}/stage1.sing")).unwrap());
+
+    writeln!(
+        stage1_writer,
         "ring R = (0,v1,v2,v3,b(16..{d})),cs(1..{n}),ws(1..{n});
 poly b(1) = -1;
 poly b(2) = -v1;
@@ -29,53 +40,59 @@ poly b(12) = -2213*v1^11-5476*v1^8*v2-3708*v1^5*v2^2-505*v1^2*v2^3-339*v1^4*v3-6
 poly b(13) = -5889*v1^12-15997*v1^9*v2-12775*v1^6*v2^2-2618*v1^3*v2^3-1141*v1^5*v3-28*v2^4-399*v1^2*v2*v3;
 poly b(14) = -15821*v1^13-46800*v1^10*v2-43061*v1^7*v2^2-11931*v1^4*v2^3-3710*v1^6*v3-414*v1*v2^4-2001*v1^3*v2*v3-40*v2^2*v3;
 poly b(15) = -42851*v1^14-137104*v1^11*v2-142794*v1^8*v2^2-50190*v1^5*v2^3-11794*v1^7*v3-3482*v1^2*v2^4-8776*v1^4*v2*v3-556*v1*v2^2*v3-4*v3^2;
-poly cs(0) = 1;");
+poly cs(0) = 1;",
+    )
+    .unwrap();
     for i in n + 1..=d {
-        println!("poly cs({i}) = 0;");
+        writeln!(stage1_writer, "poly cs({i}) = 0;").unwrap();
     }
 
     // Step 1: compute expressions for the Chern classes of the dual
     let mut known_monomial_symmetric_functions = HashSet::new();
-    println!("poly c(0) = 1;");
+    writeln!(stage1_writer, "poly c(0) = 1;").unwrap();
     for i in 1..=n {
-        println!(
-            "poly c({i}) = {};",
-            (i..=d)
-                .flat_map(|w| partitions(w, i))
-                .map(|j| {
-                    j.iter()
-                        .map(|part| format!("b({part})"))
-                        .chain(std::iter::once(define_monomial_symmetric_function(
-                            n,
-                            &j,
-                            &mut known_monomial_symmetric_functions,
-                        )))
-                        .collect::<Vec<_>>()
-                        .join("*")
-                })
-                .collect::<Vec<_>>()
-                .join("+"),
-        );
+        let ci = (i..=d)
+            .flat_map(|w| partitions(w, i))
+            .map(|j| {
+                j.iter()
+                    .map(|part| format!("b({part})"))
+                    .chain(std::iter::once(define_monomial_symmetric_function(
+                        n,
+                        &j,
+                        &mut known_monomial_symmetric_functions,
+                        &mut stage1_writer,
+                    )))
+                    .collect::<Vec<_>>()
+                    .join("*")
+            })
+            .collect::<Vec<_>>()
+            .join("+");
+        writeln!(stage1_writer, "poly c({i}) = {ci};").unwrap();
     }
 
     // Step 2: compute the Chern subalgebra
-    println!("ideal I =");
+    writeln!(stage1_writer, "ideal I =").unwrap();
     for k in (1..=n).rev() {
-        println!(
+        writeln!(
+            stage1_writer,
             "  {},",
             ((2 * k).saturating_sub(n)..=u32::min(n, 2 * k))
                 .map(|i| format!("cs({i})*c({})", 2 * k - i))
                 .collect::<Vec<_>>()
                 .join("+"),
-        );
+        )
+        .unwrap();
     }
-    println!(
+    writeln!(
+        stage1_writer,
         "  cs({n})^2;
-I = std(I);"
-    );
+I = std(I);",
+    )
+    .unwrap();
 
     // Step 3: write the next stage, which will compute the cohomology ring
-    println!(
+    writeln!(
+        stage1_writer,
         "print(\"ring R = (0,v1,v2,v3,b(16..{d}),d(16..{n})),z(1..{n}),ws(1..{n});
 option(redSB);
 poly d(1) = 2;
@@ -92,25 +109,35 @@ poly d(11) = 65744*v1^10+189976*v1^7*v2+161034*v1^4*v2^2+31012*v1*v2^3+17770*v1^
 poly d(12) = -262400*v1^11-837637*v1^8*v2-838452*v1^5*v2^2-240631*v1^2*v2^3-86487*v1^4*v3-55329*v1*v2*v3;
 poly d(13) = 1056540*v1^12+3685550*v1^9*v2+4232750*v1^6*v2^2+1600786*v1^3*v2^3+404198*v1^5*v3+58268*v2^4+363210*v1^2*v2*v3;
 poly d(14) = -4292816*v1^13-16254540*v1^10*v2-21110372*v1^7*v2^2-10071369*v1^4*v2^3-1864478*v1^6*v3-1022466*v1*v2^4-2193009*v1^3*v2*v3-212440*v2^2*v3;
-poly d(15) = 17587492*v1^14+71867828*v1^11*v2+104219628*v1^8*v2^2+60190566*v1^5*v2^3+8581604*v1^7*v3+10170952*v1^2*v2^4+12667346*v1^4*v2*v3+2972696*v1*v2^2*v3+65024*v3^2;\");");
+poly d(15) = 17587492*v1^14+71867828*v1^11*v2+104219628*v1^8*v2^2+60190566*v1^5*v2^3+8581604*v1^7*v3+10170952*v1^2*v2^4+12667346*v1^4*v2*v3+2972696*v1*v2^2*v3+65024*v3^2;\");",
+    )
+    .unwrap();
     for i in 1..=n {
-        println!(
+        writeln!(
+            stage1_writer,
             "print(\"poly cs({i}) = (-1)^{i}*({});\");",
             (0..=(n - i))
                 .map(|k| format!("d({})*z({})", k + 1, k + i))
                 .collect::<Vec<_>>()
                 .join("+"),
-        );
+        )
+        .unwrap();
     }
-    println!("print(\"ideal I =\");");
+    writeln!(stage1_writer, "print(\"ideal I =\");").unwrap();
     for i in 1..=n {
-        println!("printf(\"  cs({i})^2-(%s),\",reduce(cs({i})^2,I));");
+        writeln!(
+            stage1_writer,
+            "printf(\"  cs({i})^2-(%s),\",reduce(cs({i})^2,I));",
+        )
+        .unwrap();
     }
-    println!(
+    writeln!(
+        stage1_writer,
         "print(\"  0;
 I = std(I);\");
-quit;"
-    );
+quit;",
+    )
+    .unwrap();
 }
 
 fn partitions(weight: u32, length: u32) -> Vec<Vec<u32>> {
@@ -127,7 +154,12 @@ fn partitions(weight: u32, length: u32) -> Vec<Vec<u32>> {
     }
 }
 
-fn define_monomial_symmetric_function(n: u32, j: &[u32], known: &mut HashSet<Vec<u32>>) -> String {
+fn define_monomial_symmetric_function(
+    n: u32,
+    j: &[u32],
+    known: &mut HashSet<Vec<u32>>,
+    writer: &mut dyn Write,
+) -> String {
     let name = format!(
         "m({})",
         j.iter()
@@ -137,29 +169,33 @@ fn define_monomial_symmetric_function(n: u32, j: &[u32], known: &mut HashSet<Vec
     );
     if !known.contains(j) {
         if j.len() > n as usize {
-            println!("poly {name} = 0;");
+            writeln!(writer, "poly {name} = 0;").unwrap();
         } else if j[0] == 1 {
-            println!("poly {name} = cs({});", j.len());
+            writeln!(writer, "poly {name} = cs({});", j.len()).unwrap();
         } else {
             let jr = j
                 .iter()
                 .filter_map(|part| (*part > 1).then_some(part - 1))
                 .collect::<Vec<_>>();
-            println!(
-                "poly {name} = reduce(cs({})*{}-({}),cs({n})^2);",
-                j.len(),
-                define_monomial_symmetric_function(n, &jr, known),
-                neighbours(&jr, j.len())
-                    .into_iter()
-                    .filter(|jn| jn != j)
-                    .map(|jn| format!(
+            let mjr = define_monomial_symmetric_function(n, &jr, known, writer);
+            let m_neighbours = neighbours(&jr, j.len())
+                .into_iter()
+                .filter(|jn| jn != j)
+                .map(|jn| {
+                    format!(
                         "{}*{}",
                         neighbour_multiplicity(&jn, &jr),
-                        define_monomial_symmetric_function(n, &jn, known),
-                    ))
-                    .collect::<Vec<_>>()
-                    .join("+"),
-            );
+                        define_monomial_symmetric_function(n, &jn, known, writer),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("+");
+            writeln!(
+                writer,
+                "poly {name} = reduce(cs({})*{mjr}-({m_neighbours}),cs({n})^2);",
+                j.len(),
+            )
+            .unwrap();
         }
         known.insert(j.to_owned());
     }
