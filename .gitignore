@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: Alois Wohlschlager <wohlschlager@math.lmu.de>
+# SPDX-License-Identifier: CC0-1.0
+/.direnv
+/.singularhistory
+/results
+/target
