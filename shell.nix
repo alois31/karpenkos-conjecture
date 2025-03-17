@@ -14,11 +14,13 @@ pkgs.mkShell {
       clippy
       nil
       nixfmt-rfc-style
+      python3
       reuse
       rust-analyzer
       rustc
       rustfmt
       singular
       ;
+    inherit (pkgs.python3Packages) python-lsp-server;
   };
 }
