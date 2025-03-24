@@ -3,6 +3,7 @@
 
 [workspace]
 members = [
+  "approximate",
   "generate-exact",
 ]
 resolver = "2"
