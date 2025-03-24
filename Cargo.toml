@@ -1,10 +1,11 @@
 # SPDX-FileCopyrightText: Alois Wohlschlager <wohlschlager@math.lmu.de>
 # SPDX-License-Identifier: CC0-1.0
 
-[package]
-name = "karpenko"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+  "generate-exact",
+]
+resolver = "2"
 
 [profile.release]
 # this is academic research, we don't want silently incorrect results
