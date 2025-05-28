@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: CC0-1.0
 let
   pkgs = import (builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/3566ab7246670a43abd2ffa913cc62dad9cdf7d5.tar.gz";
-    sha256 = "1wwqlc4fp00swnas5p3ipzhmgz3iyk84apg2vfglr5r4mfm3m980";
+    url = "https://releases.nixos.org/nixos/unstable/nixos-25.11pre805967.62b852f6c674/nixexprs.tar.xz";
+    sha256 = "sha256-0VFAX85s2QcFpcNVy7J4yn7j8Cn2IZADd1wsbT+1TYs=";
   }) { };
 in
 pkgs.mkShell {
