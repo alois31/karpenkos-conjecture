@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 
 use std::{
+    borrow::Cow,
     cmp::Reverse,
     collections::HashSet,
     fs::File,
@@ -34,15 +35,19 @@ proc coeffs_t(poly p) {{
 }}
 matrix b = coeffs_t(subst(e,t,-l));
 matrix d = coeffs_t(subst(e,t,2*l));
+matrix l_ = coeffs_t(l);
+matrix e_ = coeffs_t(e);
 ring R = (0,v1,v2,v3,b(16..{d})),cs(1..{n}),ws(1..{n});
 matrix b = fetch(T,b);
-matrix d = fetch(T,d);",
+matrix d = fetch(T,d);
+matrix l_ = fetch(T,l_);
+matrix e_ = fetch(T,e_);",
     ).unwrap();
     for i in 1..=15 {
         writeln!(stage1_writer, "poly b({i}) = b[{i},1];").unwrap();
     }
     writeln!(stage1_writer, "poly cs(0) = 1;").unwrap();
-    for i in n + 1..=d {
+    for i in n + 1..=u32::max(d, 15) {
         writeln!(stage1_writer, "poly cs({i}) = 0;").unwrap();
     }
 
@@ -121,24 +126,67 @@ option(redSB);\");",
     writeln!(
         stage1_writer,
         "print(\"  0;
-I = std(I);\");
-quit;",
+I = std(I);\");",
     )
     .unwrap();
+    for i in 1..=15 {
+        writeln!(
+            stage1_writer,
+            "poly p({i}) = {};",
+            (1..i)
+                .map(|j| format!("(-1)^{}*cs({j})*p({})", j - 1, i - j))
+                .chain(std::iter::once(format!("(-1)^{}*{i}*cs({i})", i - 1)))
+                .collect::<Vec<_>>()
+                .join("+")
+        )
+        .unwrap();
+    }
+    writeln!(
+        stage1_writer,
+        "poly lu = reduce(({})/2,I);
+poly u = 0;
+for (int i=15; i>0; i--) {{
+    u = reduce(lu*u+e_[i,1],I);
+}}
+u = reduce(lu*u,I);
+printf(\"poly u = reduce(%s,I);\",u);",
+        (1..=15)
+            .map(|i| format!("l_[{i},1]*p({i})"))
+            .collect::<Vec<_>>()
+            .join("+"),
+    )
+    .unwrap();
+    writeln!(stage1_writer, "quit;").unwrap();
 
     let mut stage3_writer =
         BufWriter::new(File::create(format!("{directory}/stage3.sing")).unwrap());
-    writeln!(stage3_writer, "< \"{directory}/stage2.sing\";").unwrap();
+    writeln!(
+        stage3_writer,
+        "< \"{directory}/stage2.sing\";
+poly x;",
+    )
+    .unwrap();
     for mask in 0..1 << (n - 1) {
         let is = (2..=n)
             .filter(|i| mask & (1 << (i - 2)) != 0)
             .collect::<Vec<_>>();
         for d1 in 0..=d - is.iter().sum::<u32>() {
-            let x = std::iter::once(format!("z(1)^{d1}"))
-                .chain(is.iter().map(|i| format!("cs({i})")))
-                .collect::<Vec<_>>()
-                .join("*");
-            writeln!(stage3_writer, "printf(\"{x}=%s\",reduce({x},I));").unwrap();
+            writeln!(stage3_writer, "x = 1;").unwrap();
+            for factor in std::iter::repeat_n(Cow::Borrowed("u"), d1.try_into().unwrap())
+                .chain(is.iter().map(|i| Cow::Owned(format!("cs({i})"))))
+                .rev()
+            {
+                writeln!(stage3_writer, "x = reduce({factor}*x,I);").unwrap();
+            }
+            writeln!(
+                stage3_writer,
+                "printf(\"{}=%s\",x);",
+                std::iter::once(format!("u^{d1}"))
+                    .chain(is.iter().map(|i| format!("cs({i})")))
+                    .collect::<Vec<_>>()
+                    .join("*"),
+            )
+            .unwrap();
         }
     }
     writeln!(stage3_writer, "quit;").unwrap();

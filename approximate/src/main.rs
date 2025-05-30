@@ -176,21 +176,33 @@ fn rational_element(
     squares: &HashMap<u8, Element>,
     cache: &mut HashMap<(BasisElement, u8), Element>,
 ) -> Element {
-    std::iter::repeat_n(Element::from_iter(term(1, 0, 0, &[1], n)), k.into())
-        .chain(cs.iter().map(|k| {
+    let u = Element::from_iter(
+        [
+            term(-1, 0, 0, &[1], n),
+            term(-1, 2, 0, &[1, 2], n),
+            term(5, 3, 0, &[4], n),
+            term(-1, 3, 0, &[1, 3], n),
+            term(4, 0, 1, &[4], n),
+            term(-1, 0, 1, &[1, 3], n),
+        ]
+        .into_iter()
+        .flatten(),
+    );
+    std::iter::repeat_n(u, k.into())
+        .chain(cs.iter().map(|i| {
             [
-                term(2, 0, 0, &[*k], n),
-                term(-1, 1, 0, &[k + 1], n),
-                term(2, 2, 0, &[k + 2], n),
-                term(-8, 3, 0, &[k + 3], n),
-                term(-7, 0, 1, &[k + 3], n),
+                term(2, 0, 0, &[*i], n),
+                term(-1, 1, 0, &[i + 1], n),
+                term(2, 2, 0, &[i + 2], n),
+                term(-8, 3, 0, &[i + 3], n),
+                term(-7, 0, 1, &[i + 3], n),
             ]
             .into_iter()
             .flatten()
             .map(|(m, c)| {
                 (
                     m,
-                    (Coefficient::pow(-1, (k + 1).into()) * c) & ((1 << t) - 1),
+                    (Coefficient::pow(-1, (i + 1).into()) * c) & ((1 << t) - 1),
                 )
             })
             .filter(|(m, c)| *c != 0 && m.zs == m.zs & ((1 << n) - 1))
@@ -354,7 +366,7 @@ fn main() {
         for d1 in 0..=d - cs.iter().sum::<u8>() {
             if d1 + cs.iter().sum::<u8>() >= d - 3 {
                 println!(
-                    "z_1^{{{d1}}}c_{{{}}}^*≡{}",
+                    "u^{{{d1}}}c_{{{}}}^*≡{}",
                     cs.iter()
                         .map(ToString::to_string)
                         .collect::<Vec<_>>()
