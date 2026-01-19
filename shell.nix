@@ -33,19 +33,15 @@ let
 in
 pkgs.mkShell {
   strictDeps = true;
-  nativeBuildInputs = builtins.attrValues {
-    inherit (pkgs)
-      cargo
-      clippy
-      nil
-      nixfmt-rfc-style
-      python3
-      reuse
-      rust-analyzer
-      rustc
-      rustfmt
-      singular
-      ;
-    inherit (pkgs.python3Packages) python-lsp-server;
-  };
+  nativeBuildInputs = [
+    pkgs.cargo
+    pkgs.clippy
+    pkgs.nil
+    pkgs.nixfmt-rfc-style
+    pkgs.reuse
+    pkgs.rust-analyzer
+    pkgs.rustc
+    pkgs.rustfmt
+    pkgs.singular
+  ];
 }
