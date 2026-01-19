@@ -1,5 +1,8 @@
 # SPDX-FileCopyrightText: Alois Wohlschlager <wohlschlager@math.lmu.de>
 # SPDX-License-Identifier: CC0-1.0
+{
+  development ? true,
+}:
 let
   pkgs =
     import
@@ -33,15 +36,18 @@ let
 in
 pkgs.mkShell {
   strictDeps = true;
-  nativeBuildInputs = [
-    pkgs.cargo
-    pkgs.clippy
-    pkgs.nil
-    pkgs.nixfmt-rfc-style
-    pkgs.reuse
-    pkgs.rust-analyzer
-    pkgs.rustc
-    pkgs.rustfmt
-    pkgs.singular
-  ];
+  nativeBuildInputs =
+    [
+      pkgs.cargo
+      pkgs.rustc
+      pkgs.singular
+    ]
+    ++ pkgs.lib.optionals development [
+      pkgs.clippy
+      pkgs.nil
+      pkgs.nixfmt-rfc-style
+      pkgs.reuse
+      pkgs.rust-analyzer
+      pkgs.rustfmt
+    ];
 }
