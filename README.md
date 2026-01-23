@@ -38,6 +38,10 @@ The shell variable `n` needs to be set to the desired number again.
 
     cargo run -p approximate --release -- $n
 
+## Pre-computed results
+
+Due to the long running time of the programs, for convenience pre-computed results are available in the separate [results](https://codeberg.org/alois3264/karpenkos-conjecture/src/branch/results) branch.
+
 ## Citation
 
 The paper is not published yet, final citation information will be inserted later.
