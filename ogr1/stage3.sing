@@ -1,0 +1,8 @@
+< "results/ogr1/stage2.sing";
+poly x;
+x = 1;
+printf("u^0=%s",x);
+x = 1;
+x = reduce(u*x,I);
+printf("u^1=%s",x);
+quit;
