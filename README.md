@@ -1,6 +1,6 @@
 # Counterexamples to Karpenko's conjecture for Spin groups
 
-We aim to construct counterexamples to Karpenko's conjecture for Spin groups, by finding torsion in the module of irrational elements of the truncated Brown-Peterson cohomology of the maximal oriented Grassmannian.
+We aim to construct counterexamples to Karpenko's conjecture for Spin groups, by finding torsion in the module of irrational elements of the truncated Brown-Peterson cohomology of the maximal orthogonal Grassmannian.
 The required computation are performed using a computer with the help of the present set of programs.
 
 ## Prerequisites
